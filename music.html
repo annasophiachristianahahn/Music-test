@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algorithmic Music Generator</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.3;
+            gainNode.connect(audioCtx.destination);
+
+            const pentatonicScale = [261.63, 293.66, 329.63, 392.00, 440.00]; // C major pentatonic
+
+            function playNote(freq, time, duration) {
+                let osc = audioCtx.createOscillator();
+                let env = audioCtx.createGain();
+                osc.type = "sine";
+                osc.frequency.value = freq;
+                env.gain.setValueAtTime(0.001, time);
+                env.gain.exponentialRampToValueAtTime(0.3, time + 0.01);
+                env.gain.exponentialRampToValueAtTime(0.001, time + duration);
+                osc.connect(env);
+                env.connect(gainNode);
+                osc.start(time);
+                osc.stop(time + duration);
+            }
+
+            function generateMusic() {
+                let now = audioCtx.currentTime;
+                for (let i = 0; i < 16; i++) {
+                    let note = pentatonicScale[Math.floor(Math.random() * pentatonicScale.length)];
+                    let duration = Math.random() * 0.2 + 0.1;
+                    playNote(note, now + i * 0.3, duration);
+                }
+                setTimeout(generateMusic, 5000); // Regenerate music every 5 seconds
+            }
+
+            // Unlock audio on iOS
+            document.body.addEventListener("touchstart", () => {
+                if (audioCtx.state === "suspended") {
+                    audioCtx.resume();
+                }
+            });
+
+            generateMusic();
+        });
+    </script>
+</head>
+<body>
+    <h1>Algorithmic Music Generator</h1>
+    <p>Music is playing automatically...</p>
+</body>
+</html>
