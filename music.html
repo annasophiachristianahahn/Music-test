@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Algorithmic Music Generator</title>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioCtx;
+        let isStarted = false;
+
+        function startMusic() {
+            if (isStarted) return;
+            isStarted = true;
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             let gainNode = audioCtx.createGain();
             gainNode.gain.value = 0.3;
             gainNode.connect(audioCtx.destination);
@@ -37,19 +43,16 @@
                 setTimeout(generateMusic, 5000); // Regenerate music every 5 seconds
             }
 
-            // Unlock audio on iOS
-            document.body.addEventListener("touchstart", () => {
-                if (audioCtx.state === "suspended") {
-                    audioCtx.resume();
-                }
-            });
-
             generateMusic();
-        });
+        }
+
+        // Require user interaction to start audio
+        document.addEventListener("click", startMusic);
+        document.addEventListener("touchstart", startMusic);
     </script>
 </head>
 <body>
     <h1>Algorithmic Music Generator</h1>
-    <p>Music is playing automatically...</p>
+    <p>Tap anywhere to start music.</p>
 </body>
 </html>
