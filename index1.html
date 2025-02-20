@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breakbeat Generator</title>
+    <script>
+        let audioCtx;
+        let isStarted = false;
+
+        function startMusic() {
+            if (isStarted) return;
+            isStarted = true;
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            let gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.4;
+            gainNode.connect(audioCtx.destination);
+
+            const scale = [220, 246.94, 277.18, 293.66, 329.63, 369.99, 415.30, 440]; // Randomized atonal scale
+            const drumSamples = ["kick", "snare", "hihat"];
+
+            function playNote(freq, time, duration) {
+                let osc = audioCtx.createOscillator();
+                let env = audioCtx.createGain();
+                let panNode = new StereoPannerNode(audioCtx, { pan: (Math.random() * 2 - 1) });
+
+                osc.type = Math.random() > 0.5 ? "square" : "sawtooth"; // Switch between glitchy waveforms
+                osc.frequency.setValueAtTime(freq * (Math.random() * 2 + 0.5), time); // Pitch chaos
+                env.gain.setValueAtTime(0.001, time);
+                env.gain.exponentialRampToValueAtTime(1, time + 0.01);
+                env.gain.exponentialRampToValueAtTime(0.001, time + duration);
+
+                osc.connect(env);
+                env.connect(panNode);
+                panNode.connect(gainNode);
+                
+                osc.start(time);
+                osc.stop(time + duration);
+            }
+
+            function playDrum(type, time) {
+                let noise = audioCtx.createBufferSource();
+                let buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+                let data = buffer.getChannelData(0);
+
+                for (let i = 0; i < buffer.length; i++) {
+                    data[i] = Math.random() * 2 - 1; // White noise
+                }
+
+                noise.buffer = buffer;
+                let filter = audioCtx.createBiquadFilter();
+                filter.type = type === "kick" ? "lowpass" : type === "snare" ? "bandpass" : "highpass";
+                filter.frequency.value = type === "kick" ? 100 : type === "snare" ? 1000 : 8000;
+
+                let gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(1, time);
+                gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(gainNode);
+
+                noise.start(time);
+            }
+
+            function generateMusic() {
+                let now = audioCtx.currentTime;
+                for (let i = 0; i < 32; i++) { // 32 steps for a faster feel
+                    let note = scale[Math.floor(Math.random() * scale.length)];
+                    let duration = Math.random() * 0.1 + 0.05; // Fast and glitchy notes
+                    let time = now + i * 0.15; // Faster sequence
+
+                    if (Math.random() > 0.7) {
+                        playDrum(drumSamples[Math.floor(Math.random() * drumSamples.length)], time);
+                    } else {
+                        playNote(note, time, duration);
+                    }
+                }
+                setTimeout(generateMusic, 3000); // Regenerate every 3 seconds
+            }
+
+            // Initial trigger to unlock iOS audio
+            let osc = audioCtx.createOscillator();
+            osc.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.01);
+
+            generateMusic();
+        }
+
+        // Ensure user taps to start
+        document.addEventListener("click", startMusic, { once: true });
+        document.addEventListener("touchstart", startMusic, { once: true });
+    </script>
+</head>
+<body>
+    <h1>Aphex Twin Style Breakbeat Generator</h1>
+    <p>Tap anywhere to start the chaos.</p>
+</body>
+</html>
